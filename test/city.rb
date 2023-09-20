@@ -217,11 +217,10 @@ describe Hansa do
         expect(adv.keys.all? { |s| s.kind_of? Symbol }).must_equal true
         expect(adv.values.all? { |n| n.kind_of? Numeric }).must_equal true
 
-        last_value = nil
+        last_value = adv.first[1]
         adv.each { |good, value|
-          if last_value
-            expect(value).must_be :>=, last_value
-          end
+          expect(value).must_be :<=, last_value
+          last_value = value
         }
       end
 
