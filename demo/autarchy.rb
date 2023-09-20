@@ -8,7 +8,6 @@ opts = Slop.parse { |o|
   o.integer '-p', '--pop', 'population', default: 5000
   o.symbol '-t', '--type', 'e.g. farming', default: nil
 }
-h = opts.to_hash
 
 c = Hansa::City.new(**opts.to_hash)
 puts c

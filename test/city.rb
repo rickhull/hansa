@@ -54,11 +54,8 @@ describe Hansa do
 
       # City.modify
       it "modifies the base LABOR costs according to city type" do
-        no_type = City.modify(nil)
-        expect(no_type).must_equal LABOR
-
-        farming = City.modify(:farming)
-        expect(farming).wont_equal LABOR
+        expect(City.modify(nil)).must_equal LABOR
+        expect(City.modify(:farming)).wont_equal LABOR
       end
 
       # City#type=
@@ -70,7 +67,6 @@ describe Hansa do
         c.type = :farming
         expect(c.type) == :farming
       end
-
     end
 
     describe "Labor cost and city terrain" do
@@ -145,7 +141,7 @@ describe Hansa do
     end
 
     describe "Diminishing Marginal Utility" do
-      it "mandates decreasing utility from N+1 goods produced" do
+      it "mandates decreasing additional utility from N+1 goods produced" do
         c = City.new
         basket = { apple: 5, bread: 7 }
         utils = c.utility(basket)
