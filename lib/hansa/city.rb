@@ -286,7 +286,7 @@ module Hansa
            leisure: leisure]
     end
 
-    # expected production (good => units) from e.g.
+    # expected production (good => units) aka "basket" from e.g.
     #   apple: 10 labor assigned
     #   bread:  5 labor assigned
     def allocate(goods_labor)
@@ -307,7 +307,7 @@ module Hansa
         utils = Hansa::CONSUMPTION.fetch(good)
         hsh[good] = utils.to_f / labor ** pow
       }
-      hsh.sort_by { |k, v| -1 * v }
+      hsh.sort_by { |k, v| -1 * v }.to_h
     end
   end
 end

@@ -213,22 +213,30 @@ describe Hansa do
     end
 
     # City#advisor
-    it "ranks goods in order of utils per labor" do
-      c = City.new
-      adv = c.advisor
-      # [[:car, 99],
-      #  [:truck, 70],
-      #  [:house, 50],
-      #  etc
-      first = adv[0]
-      expect(first[0]).must_be_kind_of Symbol
-      expect(first[1]).must_be_kind_of Numeric
+    describe "City advisor" do
+      it "ranks goods in order of utils per labor" do
+        c = City.new
+        adv = c.advisor
 
-      second = adv[1]
-      third = adv[2]
+        expect(adv.keys.all? { |s| s.kind_of? Symbol }).must_equal true
+        expect(adv.values.all? { |n| n.kind_of? Numeric }).must_equal true
 
-      expect(first[1]).must_be :>=, second[1]
-      expect(second[1]).must_be :>=, third[1]
+        last_value = nil
+        adv.each { |good, value|
+          if last_value
+            expect(value).must_be :>=, last_value
+          end
+        }
+      end
+
+      it "can also rank on e.g. utils per labor^2" do
+        c = City.new
+        adv = c.advisor
+        adv2 = c.advisor(2)
+
+        expect(adv.keys).wont_equal adv2.keys
+        expect(adv.keys.sort).must_equal adv.keys.sort
+      end
     end
   end
 end

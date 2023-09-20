@@ -17,8 +17,8 @@ pp c.terrain
 puts
 
 puts "ADVISOR:"
-goods = c.advisor.map { |a| a[0] }
-p goods
+goods = c.advisor
+pp goods
 puts
 
 basket = Hansa.basket(0) # 0 of every possible good
@@ -32,7 +32,7 @@ loop {
   count = 0
   last_stats = c.propose(basket)
 
-  goods.each { |good|
+  goods.each { |good, _|
     next if last_stats[:total_labor] + c.terrain[good] > opts[:pop]
     stats = c.propose basket.merge(good => basket[good] + 1)
     du = stats[:total_utility] - last_stats[:total_utility]
