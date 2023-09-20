@@ -21,7 +21,7 @@ goods = c.advisor.map { |a| a[0] }
 p goods
 puts
 
-prop = c.proposal(0) # 0 of every possible good
+basket = Hansa.basket(0) # 0 of every possible good
 i = 0
 checkmod = [1, opts[:pop] / 100].max  # for periodic output
 
@@ -30,11 +30,11 @@ loop {
   best = -9**9
   best_good = nil
   count = 0
-  last_stats = c.propose(prop)
+  last_stats = c.propose(basket)
 
   goods.each { |good|
     next if last_stats[:total_labor] + c.terrain[good] > opts[:pop]
-    stats = c.propose prop.merge(good => prop[good] + 1)
+    stats = c.propose basket.merge(good => basket[good] + 1)
     du = stats[:total_utility] - last_stats[:total_utility]
     dl = stats[:total_labor] - last_stats[:total_labor]
     upl = du / dl.to_f
@@ -47,12 +47,12 @@ loop {
 
   break unless best_good
 
-  prop[best_good] += 1
-  # puts format("%s: %i", best_good, prop[best_good])
+  basket[best_good] += 1
+  # puts format("%s: %i", best_good, basket[best_good])
   i += 1
 
   if i % checkmod == 0
-    stats = c.propose(prop)
+    stats = c.propose(basket)
     u = stats[:total_utility]
     l = stats[:total_labor]
 
@@ -63,10 +63,10 @@ loop {
 
 puts
 puts "GOODS PRODUCED:"
-pp prop.sort_by { |k, v| -v }
+pp basket.sort_by { |k, v| -v }
 puts
 
-stats = c.propose(prop)
+stats = c.propose(basket)
 
 puts "LABOR USED:"
 pp stats[:labor].sort_by { |k, v| -v }

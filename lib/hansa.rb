@@ -91,4 +91,8 @@ module Hansa
     hand_tools: 10,
     power_tools: 20,
   }
+
+  def self.basket(n = 0)
+    LABOR.transform_values { n }
+  end
 end

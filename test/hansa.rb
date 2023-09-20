@@ -4,23 +4,23 @@ require 'hansa'
 include Hansa
 
 describe Hansa do
-  describe "CONSUMPTION" do
+  describe "CONSUMPTION and LABOR" do
     it "maps goods to utils" do
       expect(CONSUMPTION[:apple]).must_be_kind_of Numeric
-    end
-
-    it "has the same keys (goods) as LABOR" do
-      LABOR.each_key { |k| expect(CONSUMPTION.key?(k)).must_equal(true) }
-    end
-  end
-
-  describe "LABOR" do
-    it "maps goods to labor cost" do
       expect(LABOR[:apple]).must_be_kind_of Numeric
     end
 
-    it "has the same keys (goods) as CONSUMPTION" do
-      CONSUMPTION.each_key { |k| expect(LABOR.key?(k)).must_equal(true) }
+    it "has identical keys (goods)" do
+      expect(CONSUMPTION.keys.sort).must_equal LABOR.keys.sort
     end
+  end
+
+  it "generates a basket of goods" do
+    b = Hansa.basket(0)
+    expect(b.keys.sort).must_equal LABOR.keys.sort
+    expect(b.values.all? { |count| count == 0 }).must_equal true
+
+    b = Hansa.basket(100)
+    expect(b.values.all? { |count| count == 100 }).must_equal true
   end
 end
