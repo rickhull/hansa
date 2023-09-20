@@ -264,7 +264,7 @@ module Hansa
         utility[good] = Array.new(count) { |i|
           # the multiplier gets smaller as i goes up
           utils * (@dmu ** i)
-        }.sum.round * (@icu ** other_goods)
+        }.sum * (@icu ** other_goods)
       }
       utility
     end
