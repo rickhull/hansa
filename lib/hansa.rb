@@ -9,6 +9,11 @@ module Hansa
     fish: 8,
     grape: 4,
     potato: 3,
+    rice: 3,
+
+    beer: 9,
+    wine: 12,
+    liquor: 10,
 
     restaurant_meal: 18,
     fancy_meal: 30,
@@ -55,6 +60,11 @@ module Hansa
     fish: 10,
     grape: 5,
     potato: 2,
+    rice: 3,
+
+    beer: 12,
+    wine: 15,
+    liquor: 10,
 
     restaurant_meal: 20,
     fancy_meal: 30,
