@@ -87,8 +87,10 @@ module Hansa
   end
 
   class Map
-    WEST_COAST = 0.1
-    EAST_COAST = 0.9
+    WEST_ISLES = 0.05
+    WEST_COAST = 0.15
+    EAST_COAST = 0.85
+    EAST_ISLES = 0.95
 
     def self.west_coast?(pos)
       pos.x <= WEST_COAST
@@ -115,18 +117,38 @@ module Hansa
       @river = Set[]
     end
 
+
+    # from outermost to innermost:
+    # islands (TODO, coastal)
+    # coast (coastal, altitude limited)
+    # delta (farming, altitude limited)
+    # inland (anything except coastal)
     def generate(cities = 25)
       cities.times { |i|
-        pos = Position.random
         sym = (97 + i).chr.to_sym
-        name = Hansa::CITY_NAMES.fetch(sym).sample
-        if self.class.west_coast?(pos) or self.class.east_coast?(pos)
-          # reduce the altitude
-          pos.vec[2] /= 10.0
-          type = :coastal
+        pos = Position.random
+
+        if pos.x <= WEST_COAST or pos.x >= EAST_COAST
+          if pos.x <= WEST_ISLES or pos.x >= EAST_ISLES
+            pos.vec[2] /= 2.0 # halve the altitude
+            type = :island
+            name = City::COASTAL_NAMES.fetch(sym).sample
+          else
+            pos.vec[2] /= 10.0 # crush the altitude
+            if rand(2) == 0
+              pos.vec[2] /= 2.0 # a little lower now
+              type = :coastal
+              name = City::COASTAL_NAMES.fetch(sym).sample
+            else
+              type = :farming
+              name = City::DELTA_NAMES.fetch(sym).sample
+            end
+          end
         else
-          type = (City::TYPES.keys - [:coastal]).sample
+          type = (City::TYPES.keys - [:coastal, :island, :delta]).sample
+          name = City::NAMES.fetch(sym).sample
         end
+
         @cities[name] = City.new(name: name, type: type)
         @positions[name] = pos
       }
@@ -205,16 +227,25 @@ module Hansa
       @river
     end
 
-    def report
+    def city_report
       rpt = []
       @cities.each { |name, city|
         pos = @positions[name]
-        altitude = pos.z * @scale[2]
-        rpt << format("%s - %s %s %s city, %i %s",
-                      name, pos.central, pos.quadrant,
-                      city.type, altitude, @units[2])
+        altitude = (pos.z * @scale[2]).round
+        rpt << format("%s   %s %s %s %s %s",
+                      name.to_s.rjust(16, ' '),
+                      pos.central.to_s.rjust(5, ' '),
+                      pos.quadrant,
+                      city.type.to_s.rjust(12, ' '),
+                      altitude.to_s.rjust(4, ' '), @units[2])
       }
       rpt.join($/)
+    end
+
+    def water_report
+      [format("River: %s", self.river_path.join(' -> ')),
+       format("West coast: %s", self.west_coast.join(', ')),
+       format("East coast: %s", self.east_coast.join(', '))].join($/)
     end
 
     def render(x: 80, y: 50)
@@ -228,7 +259,7 @@ module Hansa
         colnum = (pos.x * x).floor
         rows[rownum][colnum] = name[0]
       }
-      rows.map { |row| row.join }.join($\)
+      rows.map { |row| row.join }.join($/)
     end
 
     def distance(name1, name2)
