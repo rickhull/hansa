@@ -13,9 +13,6 @@ describe Hansa do
         expect(c.dmu).must_be_kind_of Numeric
         expect(c.icu).must_be_kind_of Numeric
         expect(c.terrain).must_be_kind_of Hash
-        expect(c.type).must_be_kind_of NilClass
-
-        c = City.new(type: :farming)
         expect(c.type).must_be_kind_of Symbol
       end
 
@@ -36,10 +33,10 @@ describe Hansa do
 
     describe "City types" do
       # City.new
-      it "may be one of several types, including nil" do
-        # nil
+      it "may be one of several types, with a default" do
+        # default
         expect(City.new).must_be_kind_of Hansa::City
-        expect(City.new(type: nil)).must_be_kind_of Hansa::City
+        expect(City.new(type: :developing)).must_be_kind_of Hansa::City
 
         # farming, high_tech, industrial, coastal, culture, undeveloped
         expect(City.new(type: :farming)).must_be_kind_of Hansa::City
@@ -54,7 +51,7 @@ describe Hansa do
 
       # City.modify
       it "modifies the base LABOR costs according to city type" do
-        expect(City.modify(nil)).must_equal LABOR
+        expect(City.modify(:developing)).must_equal LABOR
         expect(City.modify(:farming)).wont_equal LABOR
       end
 
@@ -62,7 +59,7 @@ describe Hansa do
       it "regenerates terrain when the city type is changed" do
         c = City.new
         t = c.terrain
-        c.type = nil
+        c.type = :developing
         expect(c.terrain).wont_equal t
         c.type = :farming
         expect(c.type) == :farming
@@ -72,7 +69,7 @@ describe Hansa do
     describe "Labor cost and city terrain" do
       # City.terrain
       it "has a terrain which modifies labor costs" do
-        terrain = City.terrain(nil)
+        terrain = City.terrain
         expect(terrain).wont_equal LABOR
 
         industrial_labor = City.modify(:industrial)

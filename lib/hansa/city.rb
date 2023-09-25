@@ -1,11 +1,12 @@
 require 'hansa'
+require 'matrix'
 
 module Hansa
   class City
     class LaborShortfall < RuntimeError; end
 
     TYPES = {
-      nil => {},
+      developing: {},
       farming: {
         apple: 0.2,
         bread: 0.6,
@@ -147,8 +148,8 @@ module Hansa
 
     MODIFIED = {}
 
-    # apply modifier (default nil) values to LABOR; return a new hash
-    def self.modify(type = nil)
+    # apply modifier to LABOR; return a new hash
+    def self.modify(type = :developing)
       cached = MODIFIED[type]
       return cached unless cached.nil?
       mods = TYPES.fetch type
@@ -161,7 +162,7 @@ module Hansa
     end
 
     # generate a LABOR-like hash with modifications and disturbances
-    def self.terrain(type = nil)
+    def self.terrain(type = :developing)
       hsh = {}
       self.modify(type).each { |good, labor|
         delta = labor * (rand(0) - 0.5) / 2
@@ -221,7 +222,7 @@ module Hansa
     attr_accessor :name, :pop, :dmu, :icu
     attr_reader :terrain, :type
 
-    def initialize(name: 'Hansa', pop: 10_000, type: nil)
+    def initialize(name: 'Hansa', pop: 10_000, type: :developing)
       @name = name
       @pop = pop
       @dmu = self.class.dmu(@pop)
