@@ -6,7 +6,7 @@ require 'slop'
 opts = Slop.parse { |o|
   o.string '-n', '--name', 'city name', default: 'Hansa'
   o.integer '-p', '--pop', 'population', default: 5000
-  o.symbol '-t', '--type', 'e.g. farming', default: nil
+  o.symbol '-t', '--type', 'e.g. farming', default: :developing
 }
 
 c = Hansa::City.new(**opts.to_hash)
