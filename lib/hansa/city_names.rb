@@ -33,7 +33,7 @@ module Hansa
       v: ['Victorville', 'Vallejo', 'Vienna'],
       w: ['Washington D.C.', 'Wichita', 'Winston-Salem',
           'Wuhan', 'Warsaw'],
-      x: ['Xenia', "Xi'ian"],
+      x: ['Xenia', "Xi'ian", 'Xolchimilco'],
       y: ['Yonkers', 'Yuma', 'Yakutsk'],
       z: ['Zion', 'Zephyrhills', 'Zhengzhou', 'Zaporizhia', 'Zagreb'],
     }

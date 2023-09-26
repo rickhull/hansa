@@ -92,12 +92,23 @@ module Hansa
     EAST_COAST = 0.85
     EAST_ISLES = 0.95
 
+    # magic constant
+    RIVER_MIDPOINT = 1.5
+
+    def self.west_isles?(pos)
+      pos.x <= WEST_ISLES
+    end
+
     def self.west_coast?(pos)
       pos.x <= WEST_COAST
     end
 
     def self.east_coast?(pos)
       pos.x >= EAST_COAST
+    end
+
+    def self.east_isles?(pos)
+      pos.x >= EAST_ISLES
     end
 
     attr_accessor :scale, :units
@@ -114,9 +125,16 @@ module Hansa
       # track positions (via city name) that are connected by water
       @east_coast = Set[]
       @west_coast = Set[]
+      @east_isles = Set[]
+      @west_isles = Set[]
       @river = Set[]
     end
 
+    def to_s
+      [self.render,
+       self.city_report,
+       self.water_report].join($/)
+    end
 
     # from outermost to innermost:
     # islands (TODO, coastal)
@@ -128,22 +146,28 @@ module Hansa
         sym = (97 + i).chr.to_sym
         pos = Position.random
 
-        if pos.x <= WEST_COAST or pos.x >= EAST_COAST
-          if pos.x <= WEST_ISLES or pos.x >= EAST_ISLES
+        if Map.east_coast?(pos) or Map.west_coast?(pos)
+          # coastal
+          if Map.east_isles?(pos) or Map.west_isles?(pos)
+            # island
             pos.vec[2] /= 2.0 # halve the altitude
             type = :island
             name = City::COASTAL_NAMES.fetch(sym).sample
+            (Map.east_isles?(pos) ? @east_isles : @west_isles).add name
           else
+            # mainland
             pos.vec[2] /= 10.0 # crush the altitude
             if rand(2) == 0
               pos.vec[2] /= 2.0 # a little lower now
               type = :coastal
               name = City::COASTAL_NAMES.fetch(sym).sample
             else
-              type = :farming
+              type = :delta
               name = City::DELTA_NAMES.fetch(sym).sample
             end
           end
+          # all coastal cities, mainland and islands
+          (Map.east_coast?(pos) ? @east_coast : @west_coast).add name
         else
           type = (City::TYPES.keys - [:coastal, :island, :delta]).sample
           name = City::NAMES.fetch(sym).sample
@@ -152,19 +176,31 @@ module Hansa
         @cities[name] = City.new(name: name, type: type)
         @positions[name] = pos
       }
-      self.update_coasts
       self.add_river
       @cities.keys
     end
 
-    def update_coasts
+    def find_river_midpoint(name1, name2)
+      pos1 = @positions.fetch(name1)
+      pos2 = @positions.fetch(name2)
+      dist = pos1.distance(pos2)
+      mp = pos1.midpoint(pos2)
+      shortest_dist = 99**99
+      closest = nil
+
       @positions.each { |name, pos|
-        if self.class.east_coast?(pos)
-          @east_coast.add name
-        elsif self.class.west_coast?(pos)
-          @west_coast.add name
+        next if name == name1 or name == name2
+        next if pos.z > pos1.z and pos.z > pos2.z
+        next if pos.z < pos1.z and pos.z < pos2.z
+        next if @east_coast.include?(name) or @west_coast.include?(name)
+        mp_dist = mp.distance(pos)
+        next if mp_dist > dist / RIVER_MIDPOINT
+        if mp_dist < shortest_dist
+          closest = name
+          shortest_dist = mp_dist
         end
       }
+      closest
     end
 
     def add_river
@@ -182,44 +218,36 @@ module Hansa
           gulch = pos
         end
       }
+
       @river.add apex_name
       @river.add gulch_name
 
-      # move one step down from apex, something close
-      # ideally in the direction of gulch
-      high_score, low_score = {}, {}
-      @positions.each { |name, pos|
-        next if @river.include? name
-        high_score[name] = pos.z
-        high_score[name] /= apex.distance(pos)
-        low_score[name] = 1 - pos.z
-        low_score[name] /= gulch.distance(pos)
+
+      # keep looking for midpoints
+      nothing_added = true
+      loop {
+        self.river_path.each_cons(2) { |a, b|
+          mp = self.find_river_midpoint(a, b)
+          if mp
+            nothing_added = false
+            @river.add(mp)
+            break
+          end
+        }
+        break if nothing_added
+        nothing_added = true
       }
 
-      @river.add high_score.sort_by { |name, score| -1 * score }.first[0]
-      @river.add low_score.sort_by { |name, score| -1 * score }.first[0]
-
-      # now find a middle point
-      # ideally halfway between apex and gulch and mid altitude
-      midpoint = apex.midpoint(gulch)
-      mid_score = {}
-
-      @positions.each { |name, pos|
-        next if @river.include? name
-        mid_score[name] = midpoint.distance(pos)
-      }
-      @river.add mid_score.sort_by { |name, score| score }.first[0]
-
-      # now dump to the nearest coastal city if it's lower than gulch
+      # connect with nearest coast
       closest = nil
-      dist = 99**99
+      shortest_dist = 9**9
       (@east_coast + @west_coast).each { |name|
-        closest ||= name
-        pos = @positions[name]
+        next if name == gulch_name
+        pos = @positions.fetch(name)
         next if pos.z > gulch.z
-        measure = gulch.distance(pos)
-        if measure < dist
-          dist = measure
+        dist = pos.distance(gulch)
+        if dist < shortest_dist
+          shortest_dist = dist
           closest = name
         end
       }
@@ -274,42 +302,134 @@ module Hansa
       [@east_coast, @west_coast, @river].each { |water|
         return water if water.include?(name1) and water.include?(name2)
       }
-      false
+      terminus = self.river_path.last
+      if @east_coast.include?(terminus)
+        waterway = @east_coast + @river
+      elsif @west_coast.include?(terminus)
+        waterway = @west_coast + @river
+      else
+        return false
+      end
+      waterway if waterway.include?(name1) and waterway.include?(name2)
+    end
+
+    def river?(name1, name2)
+      @river if @river.include?(name1) and @river.include?(name2)
     end
 
     def river_path
       @river.sort_by { |name| -1 * @positions[name].z }
     end
 
-    def transport_cost(name1, name2)
-      # is there a water route?
-      water = self.water_route?(name1, name2)
-      if water
-        # if a river, going downstream?
-        if water == @river
-          river_path = self.river_path
-          start = river_path.index(name1)
-          finish = river_path.index(name2)
-          if start > finish # going upstream
-            path = river_path[finish, start - finish + 1].reverse
-            river_mult = 8.0
-          else
-            path = river_path[start, finish - start + 1]
-            river_mult = 12.0
-          end
-          cost = 0
-          path.each_cons(2) { |a, b|
-            cost += self.distance(a, b) / river_mult
-          }
-          cost
+    def land_cost(name1, name2)
+      c1 = @cities.fetch(name1)
+      c2 = @cities.fetch(name2)
+      if c1.type == :island or c2.type == :island
+        raise "no land route from #{name1} to #{name2}"
+      else
+        pos1 = @positions.fetch(name1)
+        pos2 = @positions.fetch(name2)
+        alt = pos2.z - pos1.z
+        d = self.distance(name1, name2)
+        d + d * alt * 0.5
+      end
+    end
+
+    def river_cost(name1, name2)
+      if @river.include?(name1) and @river.include?(name2)
+        # do the river thing, upstream, etc
+        rp = self.river_path
+        start = rp.index(name1)
+        finish = rp.index(name2)
+        if start > finish # going upstream
+          path = rp[finish, start - finish + 1].reverse
+          river_mult = 8.5
         else
-          # ocean: simple distance / 10
-          self.distance(name1, name2) / 10.0
+          path = river_path[start, finish - start + 1]
+          river_mult = 12.0
+        end
+        cost = 0
+        path.each_cons(2) { |a, b|
+          cost += self.distance(a, b) / river_mult
+        }
+        cost
+      else
+        raise "no river route from #{name1} to #{name2}"
+      end
+    end
+
+    def sea_cost(name1, name2)
+      if (@east_coast.include?(name1) and @east_coast.include?(name2)) or
+        (@west_coast.include?(name1) and @west_coast.include?(name2))
+        self.distance(name1, name2) / 10.0
+      else
+        raise "no sea route from #{name1} to #{name2}"
+      end
+    end
+
+    def transport_cost(name1, name2)
+      delta = self.river_path.last
+      if @east_coast.include?(name1)
+        if @east_coast.include?(name2)
+          self.sea_cost(name1, name2)
+        elsif @river.include?(name2) and @east_coast.include?(delta)
+          self.sea_cost(name1, delta) + self.river_cost(delta, name2)
+        else
+          port = self.east_port(name2)
+          self.sea_cost(name1, port) + self.land_cost(port, name2)
+        end
+      elsif @west_coast.include?(name1)
+        if @west_coast.include?(name2)
+          self.sea_cost(name1, name2)
+        elsif @river.include?(name2) and @west_coast.include?(delta)
+          self.sea_cost(name1, delta) + self.river_cost(delta, name2)
+        else
+          port = self.west_port(name2)
+          self.sea_cost(name1, port) + self.land_cost(port, name2)
+        end
+      elsif @river.include?(name1)
+        if @river.include?(name2)
+          self.river_cost(name1, name2)
+        elsif @east_coast.include?(name2) and @east_coast.include?(delta)
+          self.river_cost(name1, delta) + self.sea_cost(delta, name2)
+        elsif @west_coast.include?(name2) and @west_coast.include?(delta)
+          self.river_cost(name1, delta) + self.sea_cost(delta, name2)
+        else
+          port = self.river_port(name2)
+          self.river_cost(name1, port) + self.land_cost(port, name2)
         end
       else
-        # land: simple distance, as the crow flies
-        self.distance(name1, name2)
+        if @west_coast.include?(name2)
+          port = self.west_port(name1)
+          self.land_cost(name1, port) + self.sea_cost(port, name2)
+        elsif @east_coast.include?(name2)
+          port = self.east_port(name1)
+          self.land_cost(name1, port) + self.sea_cost(port, name2)
+        elsif @river.include?(name2)
+          port = self.river_port(name1)
+          self.land_cost(name1, port) + self.river_cost(port, name2)
+        else
+          self.land_cost(name1, name2)
+        end
       end
+    end
+
+    def west_port(city_name)
+      (@west_coast - @west_isles).sort_by { |port|
+        self.distance(city_name, port)
+      }.first
+    end
+
+    def east_port(city_name)
+      (@east_coast - @east_isles).sort_by { |port|
+        self.distance(city_name, port)
+      }.first
+    end
+
+    def river_port(city_name)
+      @river.sort_by { |port|
+        self.distance(city_name, port)
+      }.first
     end
   end
 end
