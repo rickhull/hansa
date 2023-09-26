@@ -1,5 +1,59 @@
 module Hansa
   class City
+    def self.name(sym, exclude: [])
+      candidates = NAMES.fetch(sym) - exclude
+      if candidates.empty?
+        candidates = MOUNTAIN_NAMES.fetch(sym) +
+                     NAMES.fetch(sym) - exclude
+        if candidates.empty?
+          raise("No candidates for #{sym} (exclude: #{exclude.inspect}")
+        end
+      end
+      candidates.sample
+    end
+
+    def self.coastal_name(sym, exclude: [])
+      candidates = COASTAL_NAMES.fetch(sym) - exclude
+      if candidates.empty?
+        candidates = ISLAND_NAMES.fetch(sym) +
+                     COASTAL_NAMES.fetch(sym) - exclude
+        if candidates.empty?
+          raise("No candidates for #{sym} (exclude: #{exclude.inspect}")
+        end
+      end
+      candidates.sample
+    end
+
+    def self.delta_name(sym, exclude: [])
+      candidates = DELTA_NAMES.fetch(sym) - exclude
+      if candidates.empty?
+        candidates = NAMES.fetch(sym) +
+                     COASTAL_NAMES.fetch(sym) - exclude
+        if candidates.empty?
+          raise("No candidates for #{sym} (exclude: #{exclude.inspect}")
+        end
+      end
+      candidates.sample
+    end
+
+    def self.mountain_name(sym, exclude: [])
+      candidates = MOUNTAIN_NAMES.fetch(sym) - exclude
+      if candidates.empty?
+        self.name(sym, exclude: exclude)
+      else
+        candidates.sample
+      end
+    end
+
+    def self.island_name(sym, exclude: [])
+      candidates = ISLAND_NAMES.fetch(sym) - exclude
+      if candidates.empty?
+        self.coastal_name(sym, exclude: exclude)
+      else
+        candidates.sample
+      end
+    end
+
     NAMES = {
       a: ['Atlanta', 'Austin', 'Albuquerque',
           'Antwerp', 'Ankara', 'Aleppo'],
@@ -108,6 +162,64 @@ module Hansa
       x: ['Xiamen'],
       y: ['Yokohama'],
       z: ['Zamboanga'],
+    }
+
+    ISLAND_NAMES = {
+      a: [],
+      b: ['Bimini'],
+      c: ['Corsica', 'Corfu'],
+      d: [],
+      e: [],
+      f: [],
+      g: ['Guernsey'],
+      h: [],
+      i: ['Ibiza'],
+      j: ['Jeju City', 'Jersey'],
+      k: ['Key West', 'Key Largo'],
+      l: [],
+      m: ['Malta', 'Mikonos'],
+      n: ['Nicosia', 'Nassau'],
+      o: [],
+      p: ['Palma'],
+      q: [],
+      r: [],
+      s: ['Sardinia'],
+      t: [],
+      u: [],
+      v: ['Vancouver Island'],
+      w: [],
+      x: ['Xiamen'],
+      y: [],
+      z: [],
+    }
+
+    MOUNTAIN_NAMES = {
+      a: ['Aspen', 'Asheville', 'Albuquerque'],
+      b: ['Boone', 'Breckenridge', 'Boulder'],
+      c: ['Crested Butte', 'Cheyenne'],
+      d: ['Denver', 'Deer Valley'],
+      e: ['Ellijay', 'El Paso'],
+      f: ['Frisco', 'Flagstaff'],
+      g: ['Grand Junction'],
+      h: ['Highlands', 'Heavenly'],
+      i: ['Idaho Falls'],
+      j: [],
+      k: ['Keystone'],
+      l: ['La Paz', 'Lake Tahoe', 'Laramie'],
+      m: ['Missoula'],
+      n: [],
+      o: ['Ogden'],
+      p: ['Park City'],
+      q: ['Quito'],
+      r: ['Rapid City'],
+      s: ['Sun Valley', 'Salt Lake City', 'Snowmass', 'Stowe', 'Santa Fe'],
+      t: ['Taos', 'Telluride'],
+      u: [],
+      v: ['Vail'],
+      w: ['Winter Park'],
+      x: [],
+      y: ['Yuma'],
+      z: [],
     }
   end
 end

@@ -100,13 +100,13 @@ module Hansa
   end
 
   class Map
-    WEST_ISLES = 0.05
-    WEST_COAST = 0.10
-    WEST_DELTA = 0.15
+    WEST_ISLES = 0.040
+    WEST_COAST = 0.100
+    WEST_DELTA = 0.140
 
-    EAST_DELTA = 0.85
-    EAST_COAST = 0.90
-    EAST_ISLES = 0.95
+    EAST_DELTA = 0.860
+    EAST_COAST = 0.900
+    EAST_ISLES = 0.960
 
     # magic constant governs when to stop looking for a midpoint: 1.0 - 2.0?
     RIVER_MIDPOINT = 1.5
@@ -166,13 +166,14 @@ module Hansa
       @positions = {} # name => pos
 
       # track positions (via city name) that are connected by water
-      @east_delta = Set[]
-      @west_delta = Set[]
-      @east_coast = Set[]
-      @west_coast = Set[]
-      @east_isles = Set[]
       @west_isles = Set[]
+      @west_coast = Set[]
+      @west_delta = Set[]
       @river = Set[]
+      @river_path = []
+      @east_delta = Set[]
+      @east_coast = Set[]
+      @east_isles = Set[]
     end
 
     def to_s
@@ -196,39 +197,50 @@ module Hansa
       rpt.join($/)
     end
 
-    def navigable_delta?
-      terminus = self.river_path.last
-      terminus if Map.coastal?(@positions.fetch(terminus))
+    def coastal_river?
+      delta = self.river_path.last
+      (@east_coast.include?(delta) or @west_coast.include?(delta)) ?
+                                       delta : false
     end
 
     def water_report
-      ary = []
-      ary << format("West isles: %s", self.west_isles.join(', '))
-      ary << format("West coast: %s", self.west_coast.join(', '))
+      river_path = self.river_path.clone
+      west_coast = @west_coast.to_a
+      east_coast = @east_coast.to_a
+      cr = self.coastal_river?
+      if cr
+        # put brackets on last item in river
+        river_path[-1] = format("[%s]", river_path[-1])
 
-      delta = self.navigable_delta?
-      if delta
-        if @west_delta.include? delta
-          ary << format("West navigable delta: %s", delta)
-        elsif @east_delta.include? delta
-          ary << format("East navigable delta: %s", delta)
+        # if coast, put brackets on coast city
+        if @west_coast.include? cr
+          west_coast = west_coast.map { |c|
+            c == cr ? format("[%s]", c) : c
+          }
+        elsif @east_coast.include? cr
+          east_coast = east_coast.map { |c|
+            c == cr ? format("[%s]", c) : c
+          }
+        else
+          raise("wut: #{cr}")
         end
       end
 
-      ary << format("River: %s", self.river_path.join(' > '))
-      ary << format("East coast: %s", self.east_coast.join(', '))
-      ary << format("East isles: %s", self.east_isles.join(', '))
+      ary = []
+      ary << format("West isles: %s", @west_isles.join(', '))
+      ary << format("West coast: %s", west_coast.join(', '))
       ary << ''
-      ary << "Delta, presumed non-navigable:"
-      ary << '---'
-      ary << format("West: %s", self.west_delta.join(', '))
-      ary << format("East: %s", self.east_delta.join(', '))
+      ary << format("River: %s", river_path.join(' > '))
+      ary << ''
+      ary << format("East coast: %s", east_coast.join(', '))
+      ary << format("East isles: %s", @east_isles.join(', '))
       ary.join($/)
     end
 
     # from outermost to innermost:
     # islands
-    # coastal / delta
+    # coastal
+    # delta
     # inland (anything except coastal)
     def generate(cities = 25)
       cities.times { |i|
@@ -236,27 +248,31 @@ module Hansa
         pos = Position.random
 
         if Map.isles?(pos)
-          # island, add to _coast and _isles
-          pos.vec[2] /= 2.0 # halve the altitude
           type = :island
-          name = City::COASTAL_NAMES.fetch(sym).sample
+          pos.vec[2] /= 2.0 # halve the altitude
+          name = City.island_name(sym)
           (Map.east_isles?(pos) ? @east_isles : @west_isles).add name
         elsif Map.coast?(pos)
-          # coast, add to _coast
-          pos.vec[2] /= 10.0 # crush the altitude
           type = :coastal
-          name = City::COASTAL_NAMES.fetch(sym).sample
+          pos.vec[2] /= 10.0 # crush the altitude
+          name = City.coastal_name(sym)
           (Map.east_coast?(pos) ? @east_coast : @west_coast).add name
         elsif Map.delta?(pos)
-          # delta, not part of _coast
-          pos.vec[2] /= 20.0 # demolish the altitude
           type = :delta
-          name = City::DELTA_NAMES.fetch(sym).sample
+          pos.vec[2] /= 20.0 # demolish the altitude
+          name = City.delta_name(sym)
           (Map.east_delta?(pos) ? @east_delta : @west_delta).add name
         else
-          # inland
-          type = (City::TYPES.keys - [:coastal, :island, :delta]).sample
-          name = City::NAMES.fetch(sym).sample
+          if pos.vec[2] > 0.5
+            # mountain
+            name = City.mountain_name(sym)
+            type = (City::TYPES.keys -
+                    [:coastal, :island, :delta, :farming]).sample
+          else
+            # inland
+            name = City.name(sym)
+            type = (City::TYPES.keys - [:coastal, :island, :delta]).sample
+          end
         end
 
         @cities[name] = City.new(name: name, type: type)
@@ -293,9 +309,9 @@ module Hansa
       # find the highest pos and lowest pos
       apex_name, gulch_name = @positions.first[0], @positions.first[0]
       apex, gulch = @positions.first[1], @positions.first[1]
-
       @positions.each { |name, pos|
-        next if @east_coast.include?(name) or @west_coast.include?(name)
+        next if self.east_sea?(name) or self.west_sea?(name)
+        next if @east_delta.include?(name) or @west_delta.include?(name)
         if pos.z >= apex.z
           apex_name = name
           apex = pos
@@ -304,15 +320,13 @@ module Hansa
           gulch = pos
         end
       }
-
       @river.add apex_name
       @river.add gulch_name
-
 
       # keep looking for midpoints
       nothing_added = true
       loop {
-        self.river_path.each_cons(2) { |a, b|
+        self.river_path(cached: false).each_cons(2) { |a, b|
           mp = self.find_river_midpoint(a, b)
           if mp
             nothing_added = false
@@ -338,8 +352,25 @@ module Hansa
           closest = name
         end
       }
-      @river.add(closest) if closest
-      @river
+      if closest
+        # add to river
+        @river.add(closest)
+        # add to coast
+        pos = @positions.fetch(closest)
+        if pos.we == :east
+          @east_coast.add closest
+        else
+          @west_coast.add closest
+        end
+      end
+      self.river_path(cached: false)
+    end
+
+    def river_path(cached: true)
+      if !cached or !@river_path or @river_path.empty?
+        @river_path = @river.sort_by { |name| -1 * @positions[name].z }
+      end
+      @river_path
     end
 
     def render(x: 80, y: 50)
@@ -365,11 +396,7 @@ module Hansa
     end
 
     def river?(name1, name2)
-      @river if @river.include?(name1) and @river.include?(name2)
-    end
-
-    def river_path
-      @river.sort_by { |name| -1 * @positions[name].z }
+      @river.include?(name1) and @river.include?(name2)
     end
 
     def land_cost(name1, name2)
@@ -391,14 +418,13 @@ module Hansa
       puts "river_cost(#{name1}, #{name2})"
       if @river.include?(name1) and @river.include?(name2)
         # do the river thing, upstream, etc
-        rp = self.river_path
-        start = rp.index(name1)
-        finish = rp.index(name2)
+        start = @river.index(name1)
+        finish = @river.index(name2)
         if start > finish # going upstream
-          path = rp[finish, start - finish + 1].reverse
+          path = @river[finish, start - finish + 1].reverse
           river_mult = 8.5
         else
-          path = river_path[start, finish - start + 1]
+          path = @river[start, finish - start + 1]
           river_mult = 12.0
         end
         cost = 0
