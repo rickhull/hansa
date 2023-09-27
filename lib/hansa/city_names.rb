@@ -1,57 +1,72 @@
 module Hansa
-  class City
-    def self.name(sym, exclude: [])
-      candidates = NAMES.fetch(sym) - exclude
+  module Global
+    SYMS = (:a..:z).to_a
+
+    def self.meta(sym = nil, first, second, third, exclude: [])
+      sym ||= SYMS.sample
+      candidates = first.fetch(sym) - exclude
       if candidates.empty?
-        candidates = MOUNTAIN_NAMES.fetch(sym) +
-                     NAMES.fetch(sym) - exclude
+        candidates = second.fetch(sym) + third.fetch(sym) - exclude
         if candidates.empty?
           raise("No candidates for #{sym} (exclude: #{exclude.inspect}")
         end
       end
       candidates.sample
     end
+  end
 
-    def self.coastal_name(sym, exclude: [])
-      candidates = COASTAL_NAMES.fetch(sym) - exclude
-      if candidates.empty?
-        candidates = ISLAND_NAMES.fetch(sym) +
-                     COASTAL_NAMES.fetch(sym) - exclude
-        if candidates.empty?
-          raise("No candidates for #{sym} (exclude: #{exclude.inspect}")
-        end
-      end
-      candidates.sample
+  module USA
+    SYMS = Global::SYMS
+
+    # fall back to MOUNTAIN_NAMES
+    def self.name(sym = nil, exclude: [])
+      Global.meta(sym,
+                  NAMES, MOUNTAIN_NAMES, NAMES,
+                  exclude: exclude)
     end
 
-    def self.delta_name(sym, exclude: [])
-      candidates = DELTA_NAMES.fetch(sym) - exclude
-      if candidates.empty?
-        candidates = NAMES.fetch(sym) +
-                     COASTAL_NAMES.fetch(sym) - exclude
-        if candidates.empty?
-          raise("No candidates for #{sym} (exclude: #{exclude.inspect}")
-        end
-      end
-      candidates.sample
+    # fall back to ISLAND_NAMES
+    def self.coastal_name(sym = nil, exclude: [])
+      Global.meta(sym,
+                  COASTAL_NAMES, ISLAND_NAMES, COASTAL_NAMES,
+                  exclude: exclude)
     end
 
-    def self.mountain_name(sym, exclude: [])
-      candidates = MOUNTAIN_NAMES.fetch(sym) - exclude
-      if candidates.empty?
-        self.name(sym, exclude: exclude)
-      else
-        candidates.sample
-      end
+    # fall back to NAMES and COASTAL_NAMES (exclude mountain and island)
+    def self.delta_name(sym = nil, exclude: [])
+      Global.meta(sym,
+                  DELTA_NAMES, NAMES, COASTAL_NAMES,
+                  exclude: exclude)
     end
 
-    def self.island_name(sym, exclude: [])
-      candidates = ISLAND_NAMES.fetch(sym) - exclude
-      if candidates.empty?
-        self.coastal_name(sym, exclude: exclude)
-      else
-        candidates.sample
+    # fall back to name()
+    def self.mountain_name(sym = nil, exclude: [])
+      candidates = MOUNTAIN_NAMES.fetch(sym || SYMS.sample) - exclude
+      return candidates.sample unless candidates.empty?
+      if sym.nil? # try other random syms
+        2.times {
+          candidates = MOUNTAIN_NAMES.fetch(SYMS.sample) - exclude
+          return candidates.sample unless candidates.empty?
+        }
       end
+      # if we've gotten this far, it's because sym != nil and !exclude.empty?
+      # don't worry about circular reference back to MOUNTAIN_NAMES
+      # calling name() ensures an exception if everything is excluded
+      self.name(sym, exclude: exclude)
+    end
+
+    # fall back to coastal_name()
+    def self.island_name(sym = nil, exclude: [])
+      candidates = ISLAND_NAMES.fetch(sym || SYMS.sample) - exclude
+      return candidates.sample unless candidates.empty?
+      if sym.nil?
+        2.times {
+          candidates = ISLAND_NAMES.fetch(SYMS.sample) - exclude
+          return candidates.sample unless candidates.empty?
+        }
+      end
+      # see above comment from self.mountain_names
+      self.coastal_name(sym, exclude: exclude)
     end
 
     NAMES = {
@@ -66,7 +81,7 @@ module Hansa
       g: ['Grand Rapids', 'Garden Grove', 'Glasgow', 'Giza'],
       h: ['Houston', 'Helena', 'Hamburg', 'Hyderabad'],
       i: ['Indianapolis', 'Isfahan'],
-      j: ['Jackson', 'Jersey', 'Johannesburg', 'Jerusalem'],
+      j: ['Jackson', 'Joliet', 'Johnson City', 'Johannesburg', 'Jerusalem'],
       k: ['Kansas City', 'Knoxville', 'Krakow', 'Kinshasa', 'Kyiv'],
       l: ['Louisville', 'Las Vegas', 'Lincoln', 'Little Rock',
           'London', 'La Paz'],
@@ -103,7 +118,8 @@ module Hansa
       g: ['Gold Beach', 'Garden Grove', 'Glasgow'],
       h: ['Houston', 'Homestead'],
       i: ['Inverness', 'Istanbul', 'Incheon'],
-      j: ['Jacksonville', 'Juneau', 'Jersey City', 'Jeju City'],
+      j: ['Jacksonville', 'Juneau', 'Jersey City', 'Jamestown',
+          'Jeju City'],
       k: ['Klamath', 'Ketchikan', 'Karachi'],
       l: ['Long Beach', 'Lagos', 'London', 'Liverpool', 'Londonderry'],
       m: ['Mobile', 'Montreal', 'Melbourne'],
@@ -138,8 +154,9 @@ module Hansa
       g: ['Galveston', 'Gold Beach', 'Gold Coast'],
       h: ['Honolulu', 'Huntington Beach', 'Homestead', 'Hong Kong'],
       i: ['Irvine', 'Inverness', 'Istanbul', 'Incheon', 'Izmir'],
-      j: ['Jacksonville', 'Juneau', 'Jersey City', 'Jeju City', 'Jakarta'],
-      k: ['Key West', 'Klamath', 'Ketchikan', 'Karachi'],
+      j: ['Jacksonville', 'Jamestown', 'Juneau', 'Jersey City',
+          'Jeju City', 'Jakarta'],
+      k: ['Key West', 'Klamath', 'Ketchikan', 'Karachi', 'Kingston'],
       l: ['Los Angeles', 'Long Beach',
           'Lagos', 'Lima', 'Liverpool', 'Londonderry'],
       m: ['Miami', 'Myrtle Beach', 'Mobile',
