@@ -1,4 +1,4 @@
-require 'hansa'
+require 'hansa/goods'
 require 'hansa/city_types'
 require 'matrix'
 
@@ -14,7 +14,7 @@ module Hansa
       return cached unless cached.nil?
       mods = TYPES.fetch type
       hsh = {}
-      LABOR.each { |good, labor|
+      Goods::LABOR.each { |good, labor|
         m = mods[good] || 1
         hsh[good] = [1, labor * m].max
       }
@@ -120,7 +120,7 @@ module Hansa
       utility = {}
       goods_hsh.each { |good, count|
         other_goods = total_goods - count
-        utils = CONSUMPTION.fetch(good)
+        utils = Goods::CONSUMPTION.fetch(good)
         # for every util, add them up
         utility[good] = Array.new(count) { |i|
           # the multiplier gets smaller as i goes up
@@ -165,7 +165,7 @@ module Hansa
     def advisor(pow = 1)
       hsh = {}
       @terrain.each { |good, labor|
-        utils = Hansa::CONSUMPTION.fetch(good)
+        utils = Goods::CONSUMPTION.fetch(good)
         hsh[good] = utils.to_f / labor ** pow
       }
       hsh.sort_by { |k, v| -1 * v }.to_h

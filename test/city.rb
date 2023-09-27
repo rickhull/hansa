@@ -50,9 +50,9 @@ describe Hansa do
       end
 
       # City.modify
-      it "modifies the base LABOR costs according to city type" do
-        expect(City.modify(:developing)).must_equal LABOR
-        expect(City.modify(:farming)).wont_equal LABOR
+      it "modifies the base Goods::LABOR costs according to city type" do
+        expect(City.modify(:developing)).must_equal Goods::LABOR
+        expect(City.modify(:farming)).wont_equal Goods::LABOR
       end
 
       # City#type=
@@ -70,7 +70,7 @@ describe Hansa do
       # City.terrain
       it "has a terrain which modifies labor costs" do
         terrain = City.terrain
-        expect(terrain).wont_equal LABOR
+        expect(terrain).wont_equal Goods::LABOR
 
         industrial_labor = City.modify(:industrial)
         industrial_terrain = City.terrain(:industrial)
