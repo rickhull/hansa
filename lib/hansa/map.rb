@@ -94,7 +94,7 @@ module Hansa
         altitude = (pos.z * @scale[2]).round
         rpt << format("%s   %s %s %s %s %s",
                       name.to_s.rjust(16, ' '),
-                      pos.central.to_s.rjust(5, ' '),
+                      pos.centrality.to_s.rjust(5, ' '),
                       pos.quadrant,
                       city.type.to_s.rjust(12, ' '),
                       altitude.to_s.rjust(4, ' '), @units[2])
@@ -150,7 +150,7 @@ module Hansa
     def generate(cities = 25)
       cities.times { |i|
         sym = (97 + i).chr.to_sym
-        pos = Position.random
+        pos = Position.generate
 
         if Map.isles?(pos)
           type = :island

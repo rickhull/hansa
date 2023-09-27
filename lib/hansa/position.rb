@@ -3,6 +3,10 @@ require 'matrix'
 module Hansa
   class Position
     class OutOfBounds < RuntimeError; end
+    MIN = 0.0
+    MAX = 1.0
+    CENTER = 0.5
+    CENTER_VECTOR = Vector[CENTER, CENTER, CENTER]
 
     # returns an array of strings
     def self.quadrant(vec)
@@ -41,8 +45,24 @@ module Hansa
       self.new(rand(0), rand(0), rand(0))
     end
 
+    # returns a position
+    def self.generate
+      x, y = rand(0), rand(0)
+      case rand(3)
+      when 0 # low    (1/3 of positions generated have low ceiling)
+        self.new(x, y, rand(0) / 3.0)
+      when 1 # medium (1/3 of positions generated have mid ceiling)
+        self.new(x, y, rand(0) / 2.0)
+      when 2 # high   (1/3 of positions generated have no ceiling)
+        self.new(x, y, rand(0))
+      end
+    end
+
+    # boolean
     def self.valid?(x, y, z)
-      0 <= x and x <= 1 and 0 <= y and y <= 1 and 0 <= z and z <= 1
+      MIN <= x and x <= MAX and
+        MIN <= y and y <= MAX and
+        MIN <= z and z <= MAX
     end
 
     attr_reader :vec, :r3, :r2, :ns, :we, :quadrant
@@ -57,39 +77,45 @@ module Hansa
       @ns, @we, @quadrant = *Position.quadrant(@vec)
     end
 
+    # returns a scalar
     def x
       @vec[0]
     end
 
+    # returns a scalar
     def y
       @vec[1]
     end
 
+    # returns a scalar
     def z
       @vec[2]
     end
 
+    # returns a vector
     def radial(dim = 3)
-      c = Vector[0.5, 0.5, 0.5]
       case dim
       when 2
-        c - Vector[@vec[0], @vec[1], 0.5]
+        Vector[@vec[0], @vec[1], CENTER]
       when 3
-        c - @vec
+        @vec
       else
         raise "unexpected dim: #{dim.inspect}"
-      end
+      end - CENTER_VECTOR
     end
 
+    # returns a scalar
     def distance(pos2)
       self.class.distance(self, pos2)
     end
 
+    # returns a position
     def midpoint(pos2)
       self.class.midpoint(self, pos2)
     end
 
-    def central
+    # returns a symbol
+    def centrality
       if @r2.r < 0.2
         :inner
       elsif @r2.r < 0.4
