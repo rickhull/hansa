@@ -20,7 +20,7 @@ goods = c.advisor
 pp goods
 puts
 
-basket = Hansa.basket(0) # 0 of every possible good
+basket = Hansa::Goods.basket(0) # 0 of every possible good
 i = 0
 checkmod = [1, opts[:pop] / 100].max  # for periodic output
 
