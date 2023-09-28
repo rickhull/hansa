@@ -118,7 +118,7 @@ module Hansa
     attr_reader :cities, :positions,
                 :east_isles, :west_isles,
                 :east_coast, :west_coast,
-                :east_delta, :west_delta, :river
+                :east_delta, :west_delta
 
     def initialize(scale: [1000, 1000, 10_000],
                    units: [:miles, :miles, :feet])
@@ -161,13 +161,13 @@ module Hansa
     end
 
     def coastal_river?
-      delta = self.river_path.last
-      (@east_coast.include?(delta) or @west_coast.include?(delta)) ?
-                                       delta : false
+      delta = self.river.last
+      (@east_coast.include?(delta) or
+       @west_coast.include?(delta)) ? delta : false
     end
 
     def water_report
-      river_path = self.river_path.clone
+      river_path = self.river.clone
       west_coast = @west_coast.to_a
       east_coast = @east_coast.to_a
       cr = self.coastal_river?
@@ -289,7 +289,7 @@ module Hansa
       # keep looking for midpoints
       nothing_added = true
       loop {
-        self.river_path(cached: false).each_cons(2) { |a, b|
+        self.river(cached: false).each_cons(2) { |a, b|
           mp = self.find_river_midpoint(a, b)
           if mp
             nothing_added = false
@@ -326,10 +326,10 @@ module Hansa
           @west_coast.add closest
         end
       end
-      self.river_path(cached: false)
+      self.river(cached: false)
     end
 
-    def river_path(cached: true)
+    def river(cached: true)
       if !cached or !@river_path or @river_path.empty?
         @river_path = @river.sort_by { |name|
           -1 * @positions.fetch(name).z
@@ -341,7 +341,7 @@ module Hansa
     def render(x: 80, y: 50)
       self.class.render(x: x, y: y,
                         cities: @positions,
-                        river: @river_path.map { |n| @positions.fetch(n) })
+                        river: self.river.map { |n| @positions.fetch(n) })
     end
 
     def distance(name1, name2)
@@ -414,7 +414,7 @@ module Hansa
 
     def transport_cost(name1, name2)
       # consider: self.navigable_delta?
-      delta = self.river_path.last
+      delta = self.river.last
 
       if self.east_sea?(name1)
         if self.east_sea?(name2)
