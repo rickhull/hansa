@@ -29,13 +29,13 @@ loop {
   best = -9**9
   best_good = nil
   count = 0
-  last_stats = c.propose(basket)
+  baseline = c.propose(basket)
 
   goods.each { |good, _|
-    next if last_stats[:total_labor] + c.terrain[good] > opts[:pop]
+    next if baseline[:total_labor] + c.terrain[good] > opts[:pop]
     stats = c.propose basket.merge(good => basket[good] + 1)
-    du = stats[:total_utility] - last_stats[:total_utility]
-    dl = stats[:total_labor] - last_stats[:total_labor]
+    du = stats[:total_utility] - baseline[:total_utility]
+    dl = stats[:total_labor] - baseline[:total_labor]
     upl = du / dl.to_f
     if upl > best
       best_good = good
