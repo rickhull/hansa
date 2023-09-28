@@ -22,7 +22,7 @@ puts
 
 basket = Hansa::Goods.basket(0) # 0 of every possible good
 i = 0
-checkmod = [1, opts[:pop] / 100].max  # for periodic output
+checkmod = [1, c.pop / 100].max  # for periodic output
 
 
 loop {
@@ -32,7 +32,7 @@ loop {
   baseline = c.propose(basket)
 
   goods.each { |good, _|
-    next if baseline[:total_labor] + c.terrain[good] > opts[:pop]
+    next if baseline[:total_labor] + c.terrain[good] > c.pop
     stats = c.propose basket.merge(good => basket[good] + 1)
     du = stats[:total_utility] - baseline[:total_utility]
     dl = stats[:total_labor] - baseline[:total_labor]
@@ -56,7 +56,7 @@ loop {
     l = stats[:total_labor]
 
     puts format("%i utility (%i / %i labor): %.2f u/l",
-                u, l, opts[:pop], u/l.to_f)
+                u, l, c.pop, u/l.to_f)
   end
 }
 
@@ -88,9 +88,4 @@ puts
 u = stats[:total_utility]
 l = stats[:total_labor]
 puts format("%i utility (%i / %i labor): %.2f u/l",
-            u, l, opts[:pop], u/l.to_f)
-
-
-# zlib openssl libyaml gmp
-
-# TMPDIR=~/tmp asdf install ruby 3.2.2
+            u, l, c.pop, u/l.to_f)
