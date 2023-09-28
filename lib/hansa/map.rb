@@ -74,23 +74,29 @@ module Hansa
       # temporary
       return
 
-      x = rows[0].count
-      y = rows.count
+      # x = rows[0].count
+      # y = rows.count
 
       # rownum = y - (pos.y * y).floor - 1
       # colnum = (pos.x * x).floor
 
-      x1, y1 = pos1.x, pos1.y
-      x2, y2 = pos2.x, pos2.y
+      # x1, y1 = pos1.x, pos1.y
+      # x2, y2 = pos2.x, pos2.y
+
+      # y = mx + b
+      # y1 = m * x1 + b
+      # b = y1 - m * x1
+      # m = (y2 - y1) / (x2 - x1).to_f
+      # b = y1 - m * x1
 
       # xrow, xcol =
 
-      a = 2 * (y2 - y1).abs
-      b = a - 2 * (x2 - x1).abs
-      p = a - (x2 - x1).abs
+      # a = 2 * (y2 - y1).abs
+      # b = a - 2 * (x2 - x1).abs
+      # p = a - (x2 - x1).abs
 
-
-
+      # wut
+      # return false
     end
 
     # cities is a hash of positions keyed by a name
