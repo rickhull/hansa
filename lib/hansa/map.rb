@@ -16,44 +16,102 @@ module Hansa
     # magic constant governs when to stop looking for a midpoint: 1.0 - 2.0?
     RIVER_MIDPOINT = 1.5
 
+    # west isles only
     def self.west_isles?(pos)
       pos.x <= WEST_ISLES
     end
 
+    # west coast only
     def self.west_coast?(pos)
       WEST_ISLES < pos.x and pos.x <= WEST_COAST
     end
 
+    # west delta only
     def self.west_delta?(pos)
       WEST_COAST < pos.x and pos.x <= WEST_DELTA
     end
 
+    # east delta only
     def self.east_delta?(pos)
       EAST_DELTA <= pos.x and pos.x < EAST_COAST
     end
 
+    # east coast only
     def self.east_coast?(pos)
       EAST_COAST <= pos.x and pos.x < EAST_ISLES
     end
 
+    # east isles only
     def self.east_isles?(pos)
       EAST_ISLES <= pos.x
     end
 
+    # deltas only
     def self.delta?(pos)
       self.west_delta?(pos) or self.east_delta?(pos)
     end
 
+    # coasts only
     def self.coast?(pos)
       self.west_coast?(pos) or self.east_coast?(pos)
     end
 
+    # isles only
     def self.isles?(pos)
       self.west_isles?(pos) or self.east_isles?(pos)
     end
 
+    # includes delta, coast, and isles
     def self.coastal?(pos)
       pos.x <= WEST_DELTA or EAST_DELTA < pos.x
+    end
+
+    # rows[0][0]   top left
+    # rows[0][79]  top right
+    # rows[49][0]  bottom left
+    # rows[49][79] bottom right
+    def self.draw_line(rows, pos1, pos2)
+      # temporary
+      return
+
+      x = rows[0].count
+      y = rows.count
+
+      # rownum = y - (pos.y * y).floor - 1
+      # colnum = (pos.x * x).floor
+
+      x1, y1 = pos1.x, pos1.y
+      x2, y2 = pos2.x, pos2.y
+
+      # xrow, xcol =
+
+      a = 2 * (y2 - y1).abs
+      b = a - 2 * (x2 - x1).abs
+      p = a - (x2 - x1).abs
+
+
+
+    end
+
+    # cities is a hash of positions keyed by a name
+    # river is an (ordered) array of positions
+    def self.render(x: 80, y: 50, cities:, river:)
+      # rows[0][0]   top left
+      # rows[0][79]  top right
+      # rows[49][0]  bottom left
+      # rows[49][79] bottom right
+      rows = Array.new(y) { Array.new(x) { ' ' } }
+
+      # place a letter for each city into the correct row & column
+      cities.each { |name, pos|
+        rownum = y - (pos.y * y).floor - 1
+        colnum = (pos.x * x).floor
+        rows[rownum][colnum] = name[0]
+      }
+
+      # add river, drawing lines between points, pairwise
+      river.each_cons(2) { |a, b| self.draw_line(rows, a, b) }
+      rows.map { |row| row.join }.join($/)
     end
 
     attr_accessor :scale, :units
@@ -90,7 +148,7 @@ module Hansa
     def city_report
       rpt = []
       @cities.each { |name, city|
-        pos = @positions[name]
+        pos = @positions.fetch(name)
         altitude = (pos.z * @scale[2]).round
         rpt << format("%s   %s %s %s %s %s",
                       name.to_s.rjust(16, ' '),
@@ -155,28 +213,28 @@ module Hansa
         if Map.isles?(pos)
           type = :island
           pos.vec[2] /= 2.0 # halve the altitude
-          name = City.island_name(sym)
+          name = Hansa.city_name(sym: sym, locale: type, scope: :usa)
           (Map.east_isles?(pos) ? @east_isles : @west_isles).add name
         elsif Map.coast?(pos)
           type = :coastal
           pos.vec[2] /= 10.0 # crush the altitude
-          name = City.coastal_name(sym)
+          name = Hansa.city_name(sym: sym, locale: type, scope: :usa)
           (Map.east_coast?(pos) ? @east_coast : @west_coast).add name
         elsif Map.delta?(pos)
           type = :delta
           pos.vec[2] /= 20.0 # demolish the altitude
-          name = City.delta_name(sym)
+          name = Hansa.city_name(sym: sym, locale: type, scope: :usa)
           (Map.east_delta?(pos) ? @east_delta : @west_delta).add name
         else
           if pos.vec[2] > 0.5
             # mountain
-            name = City.mountain_name(sym)
             type = (City::TYPES.keys -
                     [:coastal, :island, :delta, :farming]).sample
+            name = Hansa.city_name(sym: sym, locale: :mountain, scope: :usa)
           else
             # inland
-            name = City.name(sym)
             type = (City::TYPES.keys - [:coastal, :island, :delta]).sample
+            name = Hansa.city_name(sym: sym, locale: :inland, scope: :usa)
           end
         end
 
@@ -273,23 +331,17 @@ module Hansa
 
     def river_path(cached: true)
       if !cached or !@river_path or @river_path.empty?
-        @river_path = @river.sort_by { |name| -1 * @positions[name].z }
+        @river_path = @river.sort_by { |name|
+          -1 * @positions.fetch(name).z
+        }
       end
       @river_path
     end
 
     def render(x: 80, y: 50)
-      rows = Array.new(y) { Array.new(x) { ' ' } }
-      # rows[0][0]   top left
-      # rows[0][79]  top right
-      # rows[49][0]  bottom left
-      # rows[49][79] bottom right
-      @positions.each { |name, pos|
-        rownum = y - (pos.y * y).floor - 1
-        colnum = (pos.x * x).floor
-        rows[rownum][colnum] = name[0]
-      }
-      rows.map { |row| row.join }.join($/)
+      self.class.render(x: x, y: y,
+                        cities: @positions,
+                        river: @river_path.map { |n| @positions.fetch(n) })
     end
 
     def distance(name1, name2)
