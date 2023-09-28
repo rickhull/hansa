@@ -30,6 +30,10 @@ module Hansa
     end
   end
 
+  def self.initial_symbol(i)
+    (97 + (i % 26)).chr.to_sym
+  end
+
   module Global
     SYMS = (:a..:z).to_a
 
