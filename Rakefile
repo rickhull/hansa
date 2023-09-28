@@ -14,8 +14,7 @@ task demo: [:test, :loadavg] do
   }
 end
 
-task default: :demo
-
+task default: :test
 
 #
 # METRICS

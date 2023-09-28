@@ -43,6 +43,7 @@ module Hansa
 
       watch: 20,
       tv: 60,
+      calculator: 40,
       computer: 80,
       phone: 80,
 
@@ -94,8 +95,9 @@ module Hansa
       apartment: 500,
       house: 1000,
 
-      watch: 30,
-      tv: 30,
+      watch: 20,
+      tv: 20,
+      calculator: 20,
       computer: 30,
       phone: 30,
 
