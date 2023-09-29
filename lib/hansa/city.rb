@@ -1,6 +1,5 @@
 require 'hansa/goods'
 require 'hansa/city_types'
-require 'matrix'
 
 module Hansa
   class City
