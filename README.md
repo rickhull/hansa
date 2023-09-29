@@ -8,16 +8,17 @@ City:
   - utility function
 
 Production function: `production(labor) #=> goods`
-  - L labor units produce 1 good unit
-  - N good units require L * N labor units
+  - `L` labor units produce `1` good unit
+  - `N` good units require `L * N` labor units
   - labor cost varies between goods and cities
   - labor cost is partly but not entirely determined by surrounding terrain
 
-Utility function: `util(goods_consumed) # => utils`
+Utility function: `utility(goods_consumed) # => utils`
   - total happiness of inhabitants; depends on goods consumed
-  - **The additional utility from consuming one more unit of a good decreases
-    as the amount of that good consumed increases and increases as the amount
-    of any other good increases**
+  - The additional utility from consuming one more unit of a good decreases
+    as the amount of that good consumed increases
+    *(DMU = diminshing marginal utility)* and increases as the amount
+    of any other good increases *(ICU = increasing complementary utility)*
   - identical across cities
   - autarchy level: highest utility achieved *without trade*
 
@@ -37,7 +38,7 @@ Gameplay:
 
 Worldmap:
   - (x,y) coordinates with (0,0) SW corner and (1,1) NE corner
-  - consider: (x,y) coordinates with (-1,-1) SW corner and (1,1) NE corner
+    - consider: (x,y) coordinates with (-1,-1) SW corner and (1,1) NE corner
   - East coast and West coast (defined by x-axis)
   - The outermost coastal areas are islands: East Isles and West Isles
   - Inland from coastal areas are delta areas, not accessible by sea
