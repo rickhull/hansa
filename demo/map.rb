@@ -1,5 +1,5 @@
 require 'hansa/map'
 
 m = Hansa::Map.new
-m.generate
+m.generate(26)
 puts m
