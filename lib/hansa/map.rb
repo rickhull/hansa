@@ -31,9 +31,10 @@ module Hansa
     WEST_COAST = WEST_ISLES + Coast::REGION_WIDTH
     WEST_DELTA = WEST_COAST + Delta::REGION_WIDTH
 
+    # etc
     EAST_ISLES = 1 - Island::REGION_WIDTH
-    EAST_COAST = 1 - WEST_ISLES - Coast::REGION_WIDTH # yes, WEST_ISLES
-    EAST_DELTA = 1 - WEST_COAST - Coast::REGION_WIDTH # mmmhmmm
+    EAST_COAST = EAST_ISLES - Coast::REGION_WIDTH
+    EAST_DELTA = EAST_COAST - Delta::REGION_WIDTH
 
     # defaults, character grid on terminal
     RENDER_X = 80
