@@ -98,32 +98,46 @@ module Hansa
     # rows[49][0]  bottom left
     # rows[49][79] bottom right
     def self.draw_line(rows, pos1, pos2)
-      # temporary
-      return
+      xdim = rows[0].count
+      ydim = rows.count
 
-      # x = rows[0].count
-      # y = rows.count
+      rownum = -> (y) { ydim - (y * ydim).floor - 1 }
+      colnum = -> (x) { (x * xdim).floor }
 
-      # rownum = y - (pos.y * y).floor - 1
-      # colnum = (pos.x * x).floor
+      x1, y1 = colnum.call(pos1.x), rownum.call(pos1.y)
+      x2, y2 = colnum.call(pos2.x), rownum.call(pos2.y)
 
-      # x1, y1 = pos1.x, pos1.y
-      # x2, y2 = pos2.x, pos2.y
+      dy = y2 - y1
+      dx = x2 - x1
 
       # y = mx + b
-      # y1 = m * x1 + b
-      # b = y1 - m * x1
-      # m = (y2 - y1) / (x2 - x1).to_f
-      # b = y1 - m * x1
+      # x = (y-b)/m
+      # b = y - mx
+      m = dy / dx.to_f
+      b = y1 - m * x1
 
-      # xrow, xcol =
-
-      # a = 2 * (y2 - y1).abs
-      # b = a - 2 * (x2 - x1).abs
-      # p = a - (x2 - x1).abs
-
-      # wut
-      # return false
+      if dy.abs > dx.abs
+        # steep: iterate over y pixels
+        low_y = y2 > y1 ? y1 : y2
+        dy.abs.times { |i|
+          next if i == 0
+          y = low_y + i
+          # handle vertical
+          x = (dx == 0) ? x1 : ((y - b) / m).round
+          rows[y][x] = '*'
+        }
+      else
+        # shallow: iterate over x pixels
+        low_x = x2 > x1 ? x1 : x2
+        dx.abs.times { |i|
+          next if i == 0
+          x = low_x + i
+          # handle horizontal
+          y = (dy == 0) ? y1 : (m * x + b).round
+          rows[y][x] = '*'
+        }
+      end
+      rows
     end
 
     # cities is a hash of positions keyed by a name
