@@ -389,7 +389,7 @@ module Hansa
         next if name == name1 or name == name2
         next if pos.z > pos1.z and pos.z > pos2.z
         next if pos.z < pos1.z and pos.z < pos2.z
-        next if @east_coast.include?(name) or @west_coast.include?(name)
+        next if self.east_sea?(name) or self.west_sea?(name)
         mp_dist = mp.distance(pos)
         next if mp_dist > dist / RIVER_MIDPOINT
         if mp_dist < shortest_dist
